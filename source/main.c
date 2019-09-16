@@ -18,14 +18,40 @@ typedef struct _dolheader {
 	u32 bss_size;
 	u32 entry_point;
 } dolheader;
+static void *xfb = NULL;
+static GXRModeObj *rmode = NULL;
 
 typedef void (*entrypoint) (void);
+void *Initialise();
 
-void loop()
+void * Initialise() {
+
+	void *framebuffer;
+
+	VIDEO_Init();
+	PAD_Init();
+	
+	rmode = VIDEO_GetPreferredMode(NULL);
+
+	framebuffer = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+	console_init(framebuffer,20,20,rmode->fbWidth,rmode->xfbHeight,rmode->fbWidth*VI_DISPLAY_PIX_SZ);
+	
+	VIDEO_Configure(rmode);
+	VIDEO_SetNextFramebuffer(framebuffer);
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
+
+	return framebuffer;
+
+}
+
+void loop() //A endless loop
 {
 	while(1)
 	{
-		/**/
+		VIDEO_WaitVSync();
 	}
 }
 
@@ -35,17 +61,31 @@ int main()
 	
 	if(!__io_gcsdb.isInserted())
 	{
+		Initialise();
+		iprintf("\nERROR: THERE IS NO SD GECKO INSERTED INTO MEMORY CARD SLOT B.");
+		VIDEO_WaitVSync();
 		loop();
 	}
 	
 	if(!fatMountSimple("fat", &__io_gcsdb))
 	{
+		Initialise();
+		iprintf("\nERROR: FAILED TO MOUNT THE SD CARD. CONFIRM THAT THE SD CARD IS PROPERLY FORMATED / INSERTED INTO THE SD GECKO.");
+		VIDEO_WaitVSync();
 		loop();
 	}
 	
 	FILE * autoexecFile = fopen("fat:/autoexec.dol", "rb");
 	u32 autoexecSize;
 	char * autoexecBuff;
+	
+	if(!autoexecFile)
+	{
+		Initialise();
+		iprintf("\nERROR: COULD NOT OPEN AUTOEXEC.DOL!");
+		VIDEO_WaitVSync();
+		loop();
+	}
 	
 	fseek(autoexecFile, 0, SEEK_END);
 	autoexecSize = ftell(autoexecFile);
