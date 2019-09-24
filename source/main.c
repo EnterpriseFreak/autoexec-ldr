@@ -18,18 +18,17 @@ typedef struct _dolheader {
 	u32 bss_size;
 	u32 entry_point;
 } dolheader;
-static void *xfb = NULL;
+
 static GXRModeObj *rmode = NULL;
 
 typedef void (*entrypoint) (void);
 void *Initialise();
 
-void * Initialise() {
-
+void * Initialise()
+{
 	void *framebuffer;
 
 	VIDEO_Init();
-	PAD_Init();
 	
 	rmode = VIDEO_GetPreferredMode(NULL);
 
@@ -44,7 +43,6 @@ void * Initialise() {
 	if(rmode->viTVMode&VI_NON_INTERLACE) VIDEO_WaitVSync();
 
 	return framebuffer;
-
 }
 
 void loop() //A endless loop
@@ -59,18 +57,20 @@ int main()
 {
 	__io_gcsdb.startup();
 	
+	//Check if there's a SD Gecko in memory card slot B
 	if(!__io_gcsdb.isInserted())
 	{
 		Initialise();
-		iprintf("\nERROR: THERE IS NO SD GECKO INSERTED INTO MEMORY CARD SLOT B.");
+		iprintf("\nERROR: THERE IS NO SD GECKO INSERTED INTO MEMORY CARD SLOT B.\nCONFIRM THAT THE SD GECKO IS PUSHED ALL THE WAY IN!");
 		VIDEO_WaitVSync();
 		loop();
 	}
 	
+	//Try to mount the SD card
 	if(!fatMountSimple("fat", &__io_gcsdb))
 	{
 		Initialise();
-		iprintf("\nERROR: FAILED TO MOUNT THE SD CARD. CONFIRM THAT THE SD CARD IS PROPERLY FORMATED / INSERTED INTO THE SD GECKO.");
+		iprintf("\nERROR: FAILED TO MOUNT THE SD CARD!\nCONFIRM THAT THE SD CARD IS FORMATED WITH FAT32!");
 		VIDEO_WaitVSync();
 		loop();
 	}
@@ -79,10 +79,11 @@ int main()
 	u32 autoexecSize;
 	char * autoexecBuff;
 	
+	//Check if autoexec.dol actually exists
 	if(!autoexecFile)
 	{
 		Initialise();
-		iprintf("\nERROR: COULD NOT OPEN AUTOEXEC.DOL!");
+		iprintf("\nERROR: COULD NOT OPEN AUTOEXEC.DOL FOR READING! DOES IT EXIST?");
 		VIDEO_WaitVSync();
 		loop();
 	}
@@ -95,6 +96,23 @@ int main()
 	
 	fread(autoexecBuff, 1, autoexecSize, autoexecFile);
 	fclose(autoexecFile);
+	
+	if (autoexecSize == 0)
+	{
+		Initialise();
+		iprintf("\nERROR: AUTOEXEC.DOL IS A ZERO-BYTE FILE AND CONTAINS NOTHING!");
+		VIDEO_WaitVSync();
+		loop();
+	}
+	
+	/* Check if the loaded DOL is actually homebrew The first three bytes in every homebrew dol are always 0x00, 0x00 and 0x01. */
+	if(autoexecBuff[0] != 0x00 || autoexecBuff[1] != 0x00 || autoexecBuff[2] != 0x01)
+	{
+		Initialise();
+		iprintf("\nERROR: AUTOEXEC.DOL ON SD CARD IS NOT A VAILD HOMEBREW DOL!");
+		VIDEO_WaitVSync();
+		loop();
+	}
 	
 	u32 i;
 	dolheader *autoexecDol = (dolheader*)autoexecBuff;
