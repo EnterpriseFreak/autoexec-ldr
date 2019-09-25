@@ -94,6 +94,13 @@ int main()
 	
 	autoexecBuff = (char*) malloc(sizeof(char)*autoexecSize);
 	
+	if (autoexecBuff == NULL)
+	{
+		Initialise();
+		iprintf("\nERROR: FAILED TO ALLOCATE MEMORY!\nTHE AUTOEXEC.DOL YOU'RE TRYING TO BOOT IS PROBABLY TOO LARGE!");
+		loop();
+	}
+	
 	fread(autoexecBuff, 1, autoexecSize, autoexecFile);
 	fclose(autoexecFile);
 	
