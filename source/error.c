@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <gccore.h>
 
 void error(char *errorMsg)
@@ -21,10 +22,16 @@ void error(char *errorMsg)
 	if(rmode->viTVMode&VI_NON_INTERLACE)
         VIDEO_WaitVSync();
 
-    iprintf("\nERROR: %s", errorMsg);
+    iprintf("\nERROR: %s\n\nPress the RESET button to restart the console.", errorMsg);
 
     for(;;)
     {
         VIDEO_WaitVSync();
+		
+		if(SYS_ResetButtonDown())
+		{
+			SYS_ResetSystem(SYS_RESTART, 0, true);
+			exit(0);
+		}
     }
 }
