@@ -35,7 +35,7 @@ int main()
 	//Try to mount the SD card
 	if(!fatMountSimple("B", &__io_gcsdb))
 	{
-		error("Failed to mount the SD card.\nConfirm that it is FAT32 formated.");
+		error("Failed to mount the SD card.\nConfirm that it is formatted with FAT16 or FAT32.");
 	}
 	
 	FILE * autoexecFile = fopen("B:/autoexec.dol", "rb");
